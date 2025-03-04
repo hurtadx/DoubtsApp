@@ -1,35 +1,57 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { DebtForm } from './components/DebtForm';
+import { DebtList } from './components/DebtList';
+import { addPayment, increaseDebt } from './utils/calculations';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [debts, setDebts] = useState(() => {
+    const savedDebts = localStorage.getItem('debts');
+    return savedDebts ? JSON.parse(savedDebts) : [];
+  });
+
+  
+
+  useEffect(() => {
+    localStorage.setItem('debts', JSON.stringify(debts));
+  }, [debts]);
+
+  const handleDebtCreate = (newDebt) => {
+    setDebts([...debts, newDebt]);
+  };
+
+  const handleAddPayment = (debtId, amount) => {
+    setDebts(debts.map(debt => 
+      debt.id === debtId ? addPayment(debt, amount) : debt
+    ));
+  };
+
+  const handleIncreaseDebt = (debtId, amount) => {
+    setDebts(debts.map(debt =>
+      debt.id === debtId ? increaseDebt(debt, amount) : debt
+    ));
+  };
+
+  const handleDeleteDebt = (debtId) => {
+    setDebts(debts.filter(debt => debt.id !== debtId));
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="App">
+      <header className="app-header">
+        <h1>Control de Deudas</h1>
+      </header>
+      
+      <DebtForm onDebtCreate={handleDebtCreate} />
+      
+      <DebtList 
+        debts={debts}
+        onAddPayment={handleAddPayment}
+        onIncreaseDebt={handleIncreaseDebt}
+        onDeleteDebt={handleDeleteDebt}
+      />
+    </div>
+  );
 }
 
-export default App
+export default App;
