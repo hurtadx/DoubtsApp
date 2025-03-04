@@ -1,21 +1,36 @@
 import { calculateBalance } from '../utils/calculations';
 import { useState } from 'react';
+import { Modal } from './Modal';
 
 export const DebtList = ({ debts, onAddPayment, onIncreaseDebt, onDeleteDebt }) => {
-  
   const [filter, setFilter] = useState('all');
+  const [modalType, setModalType] = useState(null); // 'payment', 'increase', null
+  const [selectedDebtId, setSelectedDebtId] = useState(null);
+  const [amountInput, setAmountInput] = useState('');
   
-  const handlePayment = (debtId) => {
-    const amount = prompt('Ingrese el monto del pago:');
-    if (amount && !isNaN(amount)) {
-      onAddPayment(debtId, Number(amount));
-    }
+  const openModal = (type, debtId) => {
+    setModalType(type);
+    setSelectedDebtId(debtId);
+    setAmountInput('');
   };
 
-  const handleIncrease = (debtId) => {
-    const amount = prompt('Ingrese el monto a aumentar:');
-    if (amount && !isNaN(amount)) {
-      onIncreaseDebt(debtId, Number(amount));
+  const closeModal = () => {
+    setModalType(null);
+    setSelectedDebtId(null);
+    setAmountInput('');
+  };
+  
+  const handleSubmitPayment = () => {
+    if (amountInput && !isNaN(amountInput) && Number(amountInput) > 0) {
+      onAddPayment(selectedDebtId, Number(amountInput));
+      closeModal();
+    }
+  };
+  
+  const handleSubmitIncrease = () => {
+    if (amountInput && !isNaN(amountInput) && Number(amountInput) > 0) {
+      onIncreaseDebt(selectedDebtId, Number(amountInput));
+      closeModal();
     }
   };
   
@@ -42,9 +57,11 @@ export const DebtList = ({ debts, onAddPayment, onIncreaseDebt, onDeleteDebt }) 
     }).format(value);
   };
 
+  // Encontrar la deuda seleccionada (para el modal)
+  const selectedDebt = selectedDebtId ? debts.find(debt => debt.id === selectedDebtId) : null;
+
   return (
     <div className="debt-list-container">
-
       <div className="debt-summary">
         <h2>Resumen de Deudas</h2>
         <p className="total-pending">Total pendiente: <span>{formatCurrency(totalPending)}</span></p>
@@ -117,10 +134,10 @@ export const DebtList = ({ debts, onAddPayment, onIncreaseDebt, onDeleteDebt }) 
               <div className="debt-actions">
                 {debt.status === 'pending' && (
                   <>
-                    <button className="action-button pay" onClick={() => handlePayment(debt.id)}>
+                    <button className="action-button pay" onClick={() => openModal('payment', debt.id)}>
                       Agregar Pago
                     </button>
-                    <button className="action-button increase" onClick={() => handleIncrease(debt.id)}>
+                    <button className="action-button increase" onClick={() => openModal('increase', debt.id)}>
                       Aumentar Deuda
                     </button>
                   </>
@@ -134,6 +151,80 @@ export const DebtList = ({ debts, onAddPayment, onIncreaseDebt, onDeleteDebt }) 
           ))
         )}
       </div>
+
+      {/* Modal para agregar pagos */}
+      <Modal 
+        isOpen={modalType === 'payment'} 
+        title={`Agregar pago a ${selectedDebt?.description || ''}`}
+        onClose={closeModal}
+      >
+        <div className="modal-form">
+          <div className="form-group">
+            <label htmlFor="payment-amount">Monto del pago</label>
+            <input
+              id="payment-amount"
+              type="number"
+              value={amountInput}
+              onChange={(e) => setAmountInput(e.target.value)}
+              min="0"
+              step="1000"
+              placeholder="0"
+              autoFocus
+            />
+          </div>
+          <div className="form-group">
+            <p>Deudor: <strong>{selectedDebt?.debtor}</strong></p>
+            <p>Saldo pendiente: <strong>{selectedDebt ? formatCurrency(calculateBalance(selectedDebt)) : ''}</strong></p>
+          </div>
+          <div className="form-buttons">
+            <button className="cancel-button" onClick={closeModal}>Cancelar</button>
+            <button 
+              className="submit-button" 
+              onClick={handleSubmitPayment}
+              disabled={!amountInput || isNaN(amountInput) || Number(amountInput) <= 0}
+            >
+              Registrar Pago
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal para aumentar deuda */}
+      <Modal 
+        isOpen={modalType === 'increase'} 
+        title={`Aumentar deuda: ${selectedDebt?.description || ''}`}
+        onClose={closeModal}
+      >
+        <div className="modal-form">
+          <div className="form-group">
+            <label htmlFor="increase-amount">Monto a aumentar</label>
+            <input
+              id="increase-amount"
+              type="number"
+              value={amountInput}
+              onChange={(e) => setAmountInput(e.target.value)}
+              min="0"
+              step="1000"
+              placeholder="0"
+              autoFocus
+            />
+          </div>
+          <div className="form-group">
+            <p>Deudor: <strong>{selectedDebt?.debtor}</strong></p>
+            <p>Monto actual: <strong>{selectedDebt ? formatCurrency(selectedDebt.amount) : ''}</strong></p>
+          </div>
+          <div className="form-buttons">
+            <button className="cancel-button" onClick={closeModal}>Cancelar</button>
+            <button 
+              className="submit-button" 
+              onClick={handleSubmitIncrease}
+              disabled={!amountInput || isNaN(amountInput) || Number(amountInput) <= 0}
+            >
+              Aumentar Deuda
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
