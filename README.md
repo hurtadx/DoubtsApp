@@ -38,7 +38,7 @@ Este proyecto me permitió:
 ## Instalación y uso
 ```sh
 # Clonar el repositorio
-git clone https://github.com/yourusername/deudapp.git
+git clone https://github.com/hurtadx/deudapp.git
 
 # Entrar al directorio
 cd deudapp
